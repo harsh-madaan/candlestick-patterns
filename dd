@@ -1,0 +1,103 @@
+import pandas as pd
+pd.options.plotting.backend = "plotly"
+pd.options.mode.chained_assignment = None
+import plotly.graph_objects as go
+import os
+directory = r'C:\Users\madaanh\OneDrive - Blackstone\Documents\bno'
+
+def one_to_five(df):
+    df_5 = df.groupby(pd.Grouper(freq='5T')).agg({
+    "Open": "first",
+    "High": "max",
+    "Low": "min",
+    "Close": "last",
+    "Volume": "sum",
+    "OI": "sum"
+})
+
+    df_5 = df_5[df_5['Volume']!=0]
+    return df_5
+
+def plotcandles(df):
+    global imagenum
+    fig = go.Figure(data=[go.Candlestick(x=df.index,
+                    open=df['Open'],
+                    high=df['High'],
+                    low=df['Low'],
+                    close=df['Close'])],
+                    layout={
+
+                        'template': "simple_white",
+                        'xaxis_rangeslider_visible': False,
+                        'showlegend': False,
+                        'hovermode': 'x',
+                        'xaxis': {
+                            # 'rangebreaks': [
+                            #     dict(bounds=["sat", "mon"]),  # hide weekends
+                            #
+                            # ],
+                            'type' : 'category',
+                            'tickformat': '%m/%d',
+                            'showgrid' : True,
+                            'visible' : False,
+                        },
+                        'yaxis': {
+                            # 'rangebreaks': [
+                            #     dict(bounds=["sat", "mon"]),  # hide weekends
+                            #
+                            # ],
+                            'range': [-10, df['Close'].max() + 20],
+                            'showgrid': True,
+                            'visible': True,
+                        },
+                    },
+                    )
+    fig.show()
+    
+    columns = ['Date','Time','Open','High','Low','Close','Volume','OI']
+df_rates = pd.read_csv(r'C:\Users\madaanh\OneDrive - Blackstone\Documents\bno\BANKNIFTY19020727900CE.csv', header=None, names=columns)
+df_rates['Datetime'] = pd.to_datetime((df_rates['Date']).astype(str) + df_rates['Time'], format='%Y%m%d%H:%M')
+df_rates = df_rates.set_index('Datetime')
+plotcandles(one_to_five(df_rates))
+
+
+from pathlib import Path
+import os
+
+columns = ['Date','Time','Open','High','Low','Close','Volume','OI']
+directory = r'C:\Users\madaanh\OneDrive - Blackstone\Documents\bno'
+
+df_all = pd.DataFrame(index = pd.read_pickle("all_times.pkl").index)
+    
+for file in os.scandir(directory):
+    if file.is_file() and ("PE" in str(file)):
+        filename = os.path.basename(file)
+        opt = filename.strip('.csv').strip('BANKNIFTY')[6:]
+        df = pd.read_csv(file, header=None, names=columns)
+        print(f"Processing - {opt}")
+        df['Datetime'] = pd.to_datetime((df['Date']).astype(str) + df['Time'], format='%Y%m%d%H:%M')
+        df = df[df['Datetime']>='2019-01-31']
+        df = df.set_index('Datetime')
+        df = one_to_five(df)
+        df_all[opt] = df['Close']
+ 
+ df_test = pd.read_csv(r'C:\Users\madaanh\OneDrive - Blackstone\Documents\all_ce.csv', index_col='Datetime')
+df_test = df_test.fillna(0)
+
+val = 20
+strike = x.iloc[(x['Price']-val).abs().argsort()[0]]['Strike']
+columns = ['Date','Time','Open','High','Low','Close','Volume','OI']
+directory = r'C:\Users\madaanh\OneDrive - Blackstone\Documents\bno'
+
+for file in os.scandir(directory):
+    if file.is_file() and (strike in str(file)):
+        df = pd.read_csv(file, header=None, names=columns)
+        print(f"Processing - {strike}")
+        df['Datetime'] = pd.to_datetime((df['Date']).astype(str) + df['Time'], format='%Y%m%d%H:%M')
+        df = df[(df['Datetime']>=start) & (df['Datetime']<=end)]
+        df = df.set_index('Datetime')
+        df = one_to_five(df)
+        plotcandles(df)
+        
+        s = df_test.loc[start]
+x = pd.DataFrame({'Strike':s.index, 'Price':s.values})
